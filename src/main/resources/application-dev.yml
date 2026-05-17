@@ -8,3 +8,7 @@ spring:
     show-sql: true
     properties.hibernate.format_sql: true # SQL을 예쁘게 줄바꿈해서 보여줌
 server.port: 8080
+jwt:
+  secret-key: omniguardy-secret-key-should-be-at-least-32-bytes
+  access-token-expire-time: 1800000       # 30분
+  refresh-token-expire-time: 1209600000  # 14일
