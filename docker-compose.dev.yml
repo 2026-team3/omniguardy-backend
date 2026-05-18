@@ -17,3 +17,12 @@ services:
       - "3312:3306"
     volumes:
       - ./_vol/mysql:/var/lib/mysql
+
+  omniguardy-mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: omniguardy-mosquitto-dev
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    restart: unless-stopped
