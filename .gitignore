@@ -38,3 +38,5 @@ out/
 
 # Docker/MySQL volume
 _vol/
+google-tts-key.json
+omniguardy-google-tts-key.json

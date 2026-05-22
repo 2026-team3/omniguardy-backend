@@ -21,3 +21,9 @@ mqtt:
   client-id: omniguardy-backend
   topic:
     tts: door/tts
+
+app:
+  base-url: ${APP_BASE_URL:http://localhost:8080}
+  tts:
+    audio-dir: ./_vol/tts/audio
+    audio-url-prefix: /audio/tts
