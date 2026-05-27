@@ -40,3 +40,4 @@ out/
 _vol/
 google-tts-key.json
 omniguardy-google-tts-key.json
+src/main/resources/firebase/firebase-service-account.json
