@@ -1,6 +1,6 @@
 package com.omniguardy.backend.domain.ai.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -15,14 +15,21 @@ public class FastApiVisionResponse {
     @NoArgsConstructor
     public static class Result {
 
+        private String module;
+
+        // 분석 결과 이름 또는 영상 이름
         private String video;
 
         private String events;
 
-        @JsonProperty("risk_score")
+        @JsonAlias({"risk_score", "riskScore"})
         private int riskScore;
 
-        @JsonProperty("risk_level")
+        @JsonAlias({"risk_level", "riskLevel"})
         private String riskLevel;
+
+        // 탐지 결과가 표시된 영상 경로
+        @JsonAlias({"annotatedVideo", "annotated_video"})
+        private String annotatedVideo;
     }
 }
