@@ -1,7 +1,7 @@
 package com.omniguardy.backend.domain.ai.controller;
 
-import com.omniguardy.backend.domain.ai.dto.VisionAnalyzeResponse;
-import com.omniguardy.backend.domain.ai.service.AiVisionService;
+import com.omniguardy.backend.domain.ai.dto.AiAnalyzeResponse;
+import com.omniguardy.backend.domain.ai.service.AiAnalyzeService;
 import com.omniguardy.backend.global.response.ApiResponse;
 import com.omniguardy.backend.global.security.auth.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
@@ -15,12 +15,12 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/ai")
-public class AiVisionController {
+public class AiAnalyzeController {
 
-    private final AiVisionService aiVisionService;
+    private final AiAnalyzeService aiAnalyzeService;
 
-    @PostMapping("/vision")
-    public ApiResponse<VisionAnalyzeResponse> analyzeVision(
+    @PostMapping("/analyze")
+    public ApiResponse<AiAnalyzeResponse> analyze(
             @RequestPart("file") MultipartFile file,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
@@ -32,11 +32,11 @@ public class AiVisionController {
             throw new IllegalArgumentException("영상 파일은 필수입니다.");
         }
 
-        VisionAnalyzeResponse response = aiVisionService.analyzeVision(
+        AiAnalyzeResponse response = aiAnalyzeService.analyze(
                 file,
                 userDetails.getUser()
         );
 
-        return ApiResponse.success("비전 분석이 완료되었습니다.", response);
+        return ApiResponse.success("AI 분석이 완료되었습니다.", response);
     }
 }

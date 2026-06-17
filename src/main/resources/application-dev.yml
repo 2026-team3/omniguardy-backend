@@ -21,7 +21,7 @@ jwt:
   refresh-token-expire-time: 1209600000  # 14일
 
 mqtt:
-  broker-url: tcp://10.254.2.174:1883 #라즈베리파이 ip
+  broker-url: tcp://10.215.74.174:1883 #라즈베리파이 ip
   client-id: omniguardy-backend
   topic:
     tts: door/tts
@@ -34,4 +34,9 @@ app:
 
 ai:
   fastapi:
-    base-url: https://ebay-stainable-jump.ngrok-free.dev #주소 바뀌면 변경하기
+    vision:
+      base-url: https://ebay-stainable-jump.ngrok-free.dev #주소 바뀌면 변경하기
+      endpoint: /analyze/vision
+    audio:
+      base-url: https://mauve-elsewhere-strenuous.ngrok-free.dev #주소 바뀌면 변경하기
+      endpoint: /predict
