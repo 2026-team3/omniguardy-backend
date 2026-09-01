@@ -42,7 +42,8 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/refresh",
                                 "/hello",
-                                "/audio/tts/**"
+                                "/audio/tts/**",
+                                "/api/edge/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
