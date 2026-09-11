@@ -1,5 +1,6 @@
 package com.omniguardy.backend.domain.edge.dto.response;
 
+import com.omniguardy.backend.domain.ai.dto.VisionResultDto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -7,6 +8,9 @@ import lombok.Getter;
 @AllArgsConstructor
 public class VideoUploadResponseDto {
 
+    private String eventId;
+
     private String filename;
-    private long size;
+
+    private VisionResultDto vision;
 }

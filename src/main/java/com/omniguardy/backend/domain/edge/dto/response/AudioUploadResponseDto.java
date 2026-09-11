@@ -7,6 +7,9 @@ import lombok.Getter;
 @AllArgsConstructor
 public class AudioUploadResponseDto {
 
+    private String eventId;
     private String filename;
     private long size;
+    private String status;
+    private double probability;
 }
