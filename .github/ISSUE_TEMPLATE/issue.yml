@@ -1,0 +1,33 @@
+name: 📝 Issue
+description: 새로운 이슈를 등록합니다.
+title: ""
+labels: []
+
+body:
+  - type: checkboxes
+    id: type
+    attributes:
+      label: 🏷️ Type
+      description: 해당하는 이슈 타입을 선택해주세요.
+      options:
+        - label: "✨ Feature"
+        - label: "🐛 Bug"
+        - label: "🔧 Fix"
+        - label: "♻️ Refactor"
+        - label: "📚 Docs"
+        - label: "🧹 Chore"
+        - label: "🧪 Test"
+        - label: "💬 Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 📝 Description
+      description: 이슈 내용을 작성해주세요.
+      placeholder: |
+        작업할 내용을 간단하게 작성해주세요.
+    validations:
+      required: true
+
