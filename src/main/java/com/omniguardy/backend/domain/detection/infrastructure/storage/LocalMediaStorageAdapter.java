@@ -2,6 +2,8 @@ package com.omniguardy.backend.domain.detection.infrastructure.storage;
 
 import com.omniguardy.backend.domain.detection.application.model.MediaFile;
 import com.omniguardy.backend.domain.detection.application.port.out.MediaStoragePort;
+import com.omniguardy.backend.domain.detection.domain.error.DetectionErrorCode;
+import com.omniguardy.backend.global.error.exception.BusinessException;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -32,7 +34,7 @@ public class LocalMediaStorageAdapter implements MediaStoragePort {
             Files.write(path, file.bytes());
             return new StoredMedia(filename, path.toString());
         } catch (IOException exception) {
-            throw new IllegalStateException("誘몃뵒???뚯씪 ???以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.", exception);
+            throw new BusinessException(DetectionErrorCode.MEDIA_STORAGE_FAILED, exception);
         }
     }
 

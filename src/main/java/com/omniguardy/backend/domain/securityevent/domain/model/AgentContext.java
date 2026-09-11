@@ -1,11 +1,13 @@
 package com.omniguardy.backend.domain.securityevent.domain.model;
 
+import com.omniguardy.backend.domain.securityevent.domain.error.SecurityEventErrorCode;
+import com.omniguardy.backend.global.error.exception.BusinessException;
 import java.util.Map;
 
 public record AgentContext(String eventId, Audio audio, Vision vision) {
     public AgentContext {
-        if (eventId == null || eventId.isBlank()) throw new IllegalArgumentException("eventId is required");
-        if (audio == null || vision == null) throw new IllegalArgumentException("audio and vision are required");
+        if (eventId == null || eventId.isBlank()) throw new BusinessException(SecurityEventErrorCode.INVALID_AGENT_CONTEXT);
+        if (audio == null || vision == null) throw new BusinessException(SecurityEventErrorCode.INVALID_AGENT_CONTEXT);
     }
 
     public record Audio(String status, double probability) {}

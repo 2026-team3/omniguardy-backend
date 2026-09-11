@@ -5,8 +5,11 @@ import com.omniguardy.backend.domain.detection.application.model.VideoReceipt;
 import com.omniguardy.backend.domain.detection.application.model.VisionAnalysis;
 import com.omniguardy.backend.domain.detection.application.port.out.MediaStoragePort;
 import com.omniguardy.backend.domain.detection.application.port.out.VisionAnalysisPort;
+import com.omniguardy.backend.domain.detection.domain.error.DetectionErrorCode;
+import com.omniguardy.backend.global.error.exception.BusinessException;
 import com.omniguardy.backend.domain.securityevent.domain.model.SecurityEvent;
 import com.omniguardy.backend.domain.securityevent.domain.repository.SecurityEventRepository;
+import com.omniguardy.backend.domain.securityevent.domain.error.SecurityEventErrorCode;
 import com.omniguardy.backend.domain.securityevent.application.usecase.AnalyzeAgentRiskUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,11 +26,11 @@ public class ReceiveVideoUseCase {
     private final ObjectMapper objectMapper;
 
     public VideoReceipt receive(MediaFile file, String eventId) {
-        if (file == null || file.bytes().length == 0) throw new IllegalArgumentException("?곸긽 ?뚯씪??鍮꾩뼱 ?덉뒿?덈떎.");
-        if (eventId == null || eventId.isBlank()) throw new IllegalArgumentException("eventId???꾩닔?낅땲??");
-        if (file.size() > MAX_VIDEO_SIZE) throw new IllegalArgumentException("?곸긽 ?뚯씪? 100MB ?댄븯留?媛?ν빀?덈떎.");
+        if (file == null || file.bytes().length == 0) throw new BusinessException(DetectionErrorCode.EMPTY_VIDEO_FILE);
+        if (eventId == null || eventId.isBlank()) throw new BusinessException(DetectionErrorCode.EVENT_ID_REQUIRED);
+        if (file.size() > MAX_VIDEO_SIZE) throw new BusinessException(DetectionErrorCode.VIDEO_FILE_TOO_LARGE);
         SecurityEvent event = securityEventRepository.findByEventId(eventId)
-                .orElseThrow(() -> new IllegalArgumentException("議댁옱?섏? ?딅뒗 eventId?낅땲?? " + eventId));
+                .orElseThrow(() -> new BusinessException(SecurityEventErrorCode.SECURITY_EVENT_NOT_FOUND));
         try {
             MediaStoragePort.StoredMedia stored = mediaStoragePort.saveVideo(eventId, file);
             event.updateVideoPath(stored.path());

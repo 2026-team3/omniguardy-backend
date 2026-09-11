@@ -2,9 +2,11 @@ package com.omniguardy.backend.domain.ai.infrastructure.fastapi;
 
 import com.omniguardy.backend.domain.ai.application.model.AnalysisResult;
 import com.omniguardy.backend.domain.ai.application.port.out.MediaAnalysisPort;
+import com.omniguardy.backend.domain.ai.domain.error.AiErrorCode;
 import com.omniguardy.backend.domain.ai.infrastructure.fastapi.dto.FastApiAudioResponse;
 import com.omniguardy.backend.domain.ai.infrastructure.fastapi.dto.FastApiVisionResponse;
 import com.omniguardy.backend.domain.detection.application.model.MediaFile;
+import com.omniguardy.backend.global.error.exception.BusinessException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
@@ -45,9 +47,9 @@ public class FastApiMediaAnalysisAdapter implements MediaAnalysisPort {
                 .contentType(MediaType.MULTIPART_FORM_DATA).body(multipart(file)).retrieve()
                 .body(FastApiAudioResponse.class);
         if (vision == null || vision.getResult() == null || !"success".equals(vision.getStatus())) {
-            throw new IllegalStateException("Vision FastAPI 분석 결과가 올바르지 않습니다.");
+            throw new BusinessException(AiErrorCode.VISION_API_FAILED);
         }
-        if (audio == null) throw new IllegalStateException("Audio FastAPI 응답이 비어 있습니다.");
+        if (audio == null) throw new BusinessException(AiErrorCode.AUDIO_API_FAILED);
         FastApiVisionResponse.Result value = vision.getResult();
         return new AnalysisResult(
                 new AnalysisResult.VisionResult(value.getModule(), value.getVideo(), value.getEvents(),

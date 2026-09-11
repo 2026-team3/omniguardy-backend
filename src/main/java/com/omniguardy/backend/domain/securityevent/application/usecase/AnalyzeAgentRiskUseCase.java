@@ -5,6 +5,8 @@ import com.omniguardy.backend.domain.securityevent.domain.repository.SecurityEve
 import com.omniguardy.backend.domain.securityevent.application.port.out.RiskAssessmentPort;
 import com.omniguardy.backend.domain.securityevent.domain.model.AgentAssessment;
 import com.omniguardy.backend.domain.securityevent.domain.model.AgentContext;
+import com.omniguardy.backend.domain.securityevent.domain.error.SecurityEventErrorCode;
+import com.omniguardy.backend.global.error.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import tools.jackson.core.JacksonException;
@@ -22,9 +24,9 @@ public class AnalyzeAgentRiskUseCase {
 
     public AgentAssessment analyze(String eventId) {
         SecurityEvent event = securityEventRepository.findByEventId(eventId)
-                .orElseThrow(() -> new IllegalArgumentException("議댁옱?섏? ?딅뒗 eventId?낅땲?? " + eventId));
+                .orElseThrow(() -> new BusinessException(SecurityEventErrorCode.SECURITY_EVENT_NOT_FOUND));
         if (!event.isVisionAnalyzed()) {
-            throw new IllegalStateException("Agent 遺꾩꽍? VISION_ANALYZED ?곹깭?먯꽌留?媛?ν빀?덈떎.");
+            throw new BusinessException(SecurityEventErrorCode.VISION_ANALYSIS_REQUIRED);
         }
         try {
             AgentAssessment assessment = riskAssessmentPort.assess(toContext(event));
@@ -51,7 +53,7 @@ public class AnalyzeAgentRiskUseCase {
         try {
             return objectMapper.readValue(json, new TypeReference<Map<String, Double>>() {});
         } catch (JacksonException exception) {
-            throw new IllegalStateException("classProbabilities瑜?Agent Context濡?蹂?섑븷 ???놁뒿?덈떎.", exception);
+            throw new BusinessException(SecurityEventErrorCode.INVALID_CLASS_PROBABILITIES, exception);
         }
     }
 

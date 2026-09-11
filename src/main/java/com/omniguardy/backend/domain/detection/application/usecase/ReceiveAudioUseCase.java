@@ -6,6 +6,8 @@ import com.omniguardy.backend.domain.detection.application.model.MediaFile;
 import com.omniguardy.backend.domain.detection.application.port.out.AudioAnalysisPort;
 import com.omniguardy.backend.domain.detection.application.port.out.CameraCommandPort;
 import com.omniguardy.backend.domain.detection.application.port.out.MediaStoragePort;
+import com.omniguardy.backend.domain.detection.domain.error.DetectionErrorCode;
+import com.omniguardy.backend.global.error.exception.BusinessException;
 import com.omniguardy.backend.domain.securityevent.domain.model.SecurityEvent;
 import com.omniguardy.backend.domain.securityevent.domain.repository.SecurityEventRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +29,7 @@ public class ReceiveAudioUseCase {
 
     @Transactional
     public AudioReceipt receive(MediaFile file) {
-        if (file == null || file.bytes().length == 0) throw new IllegalArgumentException("?ㅻ뵒???뚯씪??鍮꾩뼱 ?덉뒿?덈떎.");
+        if (file == null || file.bytes().length == 0) throw new BusinessException(DetectionErrorCode.EMPTY_AUDIO_FILE);
         String original = file.originalFilename() == null || file.originalFilename().isBlank()
                 ? "audio.wav" : file.originalFilename();
         AudioAnalysis analysis = audioAnalysisPort.analyze(file);

@@ -1,5 +1,7 @@
 package com.omniguardy.backend.domain.securityevent.domain.model;
 
+import com.omniguardy.backend.domain.securityevent.domain.error.SecurityEventErrorCode;
+import com.omniguardy.backend.global.error.exception.BusinessException;
 import com.omniguardy.backend.domain.user.domain.model.User;
 import com.omniguardy.backend.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
@@ -100,7 +102,7 @@ public class SecurityEvent extends BaseTimeEntity {
 
     public void markCameraRequested() {
         if (!SecurityEventStatus.AUDIO_DETECTED.name().equals(status)) {
-            throw new IllegalStateException("AUDIO_DETECTED ?곹깭?먯꽌留?移대찓?쇰? ?붿껌?????덉뒿?덈떎.");
+            throw new BusinessException(SecurityEventErrorCode.INVALID_EVENT_STATUS);
         }
         this.status = SecurityEventStatus.CAMERA_REQUESTED.name();
     }

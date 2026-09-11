@@ -1,8 +1,8 @@
 package com.omniguardy.backend.domain.auth.infrastructure.security;
 
 import com.omniguardy.backend.domain.auth.application.port.out.TokenPort;
-import com.omniguardy.backend.global.exception.CustomException;
-import com.omniguardy.backend.global.exception.ErrorCode;
+import com.omniguardy.backend.domain.auth.domain.error.AuthErrorCode;
+import com.omniguardy.backend.global.error.exception.BusinessException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -75,9 +75,9 @@ public class JwtProvider implements TokenPort {
             parseClaims(token);
             return true;
         } catch (ExpiredJwtException e) {
-            throw new CustomException(ErrorCode.EXPIRED_TOKEN);
+            throw new BusinessException(AuthErrorCode.EXPIRED_TOKEN);
         } catch (JwtException | IllegalArgumentException e) {
-            throw new CustomException(ErrorCode.INVALID_TOKEN);
+            throw new BusinessException(AuthErrorCode.INVALID_TOKEN);
         }
     }
 

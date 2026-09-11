@@ -1,5 +1,7 @@
 package com.omniguardy.backend.domain.detection.application.usecase;
 
+import com.omniguardy.backend.global.error.exception.BusinessException;
+
 import com.omniguardy.backend.domain.detection.application.model.MediaFile;
 import com.omniguardy.backend.domain.detection.application.model.VisionAnalysis;
 import com.omniguardy.backend.domain.detection.application.port.out.MediaStoragePort;
@@ -46,7 +48,7 @@ class ReceiveVideoUseCaseTest {
         when(repository.findByEventId("missing")).thenReturn(Optional.empty());
         ReceiveVideoUseCase useCase = new ReceiveVideoUseCase(mock(VisionAnalysisPort.class),
                 mock(MediaStoragePort.class), repository, mock(AnalyzeAgentRiskUseCase.class), new ObjectMapper());
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(BusinessException.class,
                 () -> useCase.receive(new MediaFile("video.mp4", "video/mp4", new byte[]{1}), "missing"));
         verify(repository, never()).save(any());
     }

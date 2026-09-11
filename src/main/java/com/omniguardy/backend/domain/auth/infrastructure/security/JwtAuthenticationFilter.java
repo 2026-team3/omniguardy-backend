@@ -1,6 +1,8 @@
 package com.omniguardy.backend.domain.auth.infrastructure.security;
 
 import com.omniguardy.backend.global.security.auth.CustomUserDetailsService;
+import com.omniguardy.backend.global.error.exception.BusinessException;
+import com.omniguardy.backend.global.error.response.ErrorResponseWriter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,6 +20,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
     private final CustomUserDetailsService customUserDetailsService;
+    private final ErrorResponseWriter errorResponseWriter;
 
     @Override
     protected void doFilterInternal(
@@ -28,19 +31,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = resolveToken(request);
 
-        if (token != null && jwtProvider.validateToken(token)) {
-            String email = jwtProvider.getEmail(token);
+        try {
+            if (token != null && jwtProvider.validateToken(token)) {
+                String email = jwtProvider.getEmail(token);
 
-            UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
+                UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities()
-                    );
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        } catch (BusinessException exception) {
+            errorResponseWriter.write(response, exception.getErrorCode());
+            return;
         }
 
         filterChain.doFilter(request, response);

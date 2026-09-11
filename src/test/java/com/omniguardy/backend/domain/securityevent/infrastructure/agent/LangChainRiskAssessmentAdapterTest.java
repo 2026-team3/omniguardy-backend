@@ -1,5 +1,7 @@
 package com.omniguardy.backend.domain.securityevent.infrastructure.agent;
 
+import com.omniguardy.backend.global.error.exception.BusinessException;
+
 import com.omniguardy.backend.domain.securityevent.domain.model.AgentContext;
 import com.omniguardy.backend.domain.securityevent.domain.model.RiskLevel;
 import org.junit.jupiter.api.Test;
@@ -34,7 +36,7 @@ class LangChainRiskAssessmentAdapterTest {
         response.reason = "洹쇨굅";
         when(service.assess(anyString())).thenReturn(response);
         var adapter = new LangChainRiskAssessmentAdapter(service, new ObjectMapper());
-        assertThrows(IllegalStateException.class, () -> adapter.assess(new AgentContext("event",
+        assertThrows(BusinessException.class, () -> adapter.assess(new AgentContext("event",
                 new AgentContext.Audio("abnormal", 1), new AgentContext.Vision("A18", 1, Map.of(), 0))));
     }
 }

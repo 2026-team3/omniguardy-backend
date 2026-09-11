@@ -1,5 +1,7 @@
 package com.omniguardy.backend.domain.notification.infrastructure.fcm;
 
+import com.omniguardy.backend.domain.notification.domain.error.NotificationErrorCode;
+import com.omniguardy.backend.global.error.exception.BusinessException;
 import com.omniguardy.backend.domain.notification.application.port.out.PushNotificationPort;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.Message;
@@ -32,7 +34,7 @@ public class FirebasePushAdapter implements PushNotificationPort {
             FirebaseMessaging.getInstance().send(message);
 
         } catch (Exception e) {
-            throw new RuntimeException("FCM ?꾩넚 ?ㅽ뙣", e);
+            throw new BusinessException(NotificationErrorCode.PUSH_DELIVERY_FAILED, e);
         }
     }
 }

@@ -10,8 +10,8 @@ import com.google.cloud.texttospeech.v1.VoiceSelectionParams;
 import com.google.protobuf.ByteString;
 import com.omniguardy.backend.domain.tts.infrastructure.mqtt.dto.TtsAudioMessage;
 import com.omniguardy.backend.domain.tts.application.port.out.TtsDeliveryPort;
-import com.omniguardy.backend.global.exception.CustomException;
-import com.omniguardy.backend.global.exception.ErrorCode;
+import com.omniguardy.backend.domain.tts.domain.error.TtsErrorCode;
+import com.omniguardy.backend.global.error.exception.BusinessException;
 import com.omniguardy.backend.global.mqtt.MqttConfig.MqttGateway;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -60,10 +60,10 @@ public class TtsService implements TtsDeliveryPort {
 
             mqttGateway.sendToMqtt(payload, ttsTopic);
 
-        } catch (CustomException e) {
+        } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            throw new CustomException(ErrorCode.MQTT_PUBLISH_FAILED);
+            throw new BusinessException(TtsErrorCode.DELIVERY_FAILED, e);
         }
     }
 

@@ -5,6 +5,8 @@ import com.omniguardy.backend.domain.detection.application.model.VisionAnalysis;
 import com.omniguardy.backend.domain.detection.application.port.out.VisionAnalysisPort;
 import com.omniguardy.backend.domain.detection.infrastructure.fastapi.dto.VisionPredictResponseDto;
 import com.omniguardy.backend.domain.detection.infrastructure.fastapi.dto.VisionResultDto;
+import com.omniguardy.backend.domain.detection.domain.error.DetectionErrorCode;
+import com.omniguardy.backend.global.error.exception.BusinessException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
@@ -25,9 +27,9 @@ public class VisionFastApiAdapter implements VisionAnalysisPort {
         VisionPredictResponseDto response = restClient.post().uri(baseUrl + endpoint)
                 .contentType(MediaType.MULTIPART_FORM_DATA).body(body.build()).retrieve()
                 .body(VisionPredictResponseDto.class);
-        if (response == null) throw new IllegalStateException("Vision AI ?묐떟??鍮꾩뼱 ?덉뒿?덈떎.");
+        if (response == null) throw new BusinessException(DetectionErrorCode.VISION_ANALYSIS_FAILED);
         if (!"success".equalsIgnoreCase(response.getStatus()) || response.getResult() == null) {
-            throw new IllegalStateException("Vision AI 遺꾩꽍 ?ㅽ뙣: " + response.getMessage() + " (" + response.getCode() + ")");
+            throw new BusinessException(DetectionErrorCode.VISION_ANALYSIS_FAILED);
         }
         VisionResultDto result = response.getResult();
         return new VisionAnalysis(result.getPrediction(), result.getConfidence(), result.getClassProbabilities(),

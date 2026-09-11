@@ -4,6 +4,8 @@ import com.omniguardy.backend.domain.detection.application.model.AudioAnalysis;
 import com.omniguardy.backend.domain.detection.application.model.MediaFile;
 import com.omniguardy.backend.domain.detection.application.port.out.AudioAnalysisPort;
 import com.omniguardy.backend.domain.detection.infrastructure.fastapi.dto.AudioPredictResponseDto;
+import com.omniguardy.backend.domain.detection.domain.error.DetectionErrorCode;
+import com.omniguardy.backend.global.error.exception.BusinessException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
@@ -24,7 +26,7 @@ public class AudioFastApiAdapter implements AudioAnalysisPort {
         AudioPredictResponseDto response = restClient.post().uri(baseUrl + endpoint)
                 .contentType(MediaType.MULTIPART_FORM_DATA).body(body.build()).retrieve()
                 .body(AudioPredictResponseDto.class);
-        if (response == null) throw new IllegalStateException("Audio AI ?묐떟??鍮꾩뼱 ?덉뒿?덈떎.");
+        if (response == null) throw new BusinessException(DetectionErrorCode.AUDIO_ANALYSIS_FAILED);
         return new AudioAnalysis(response.getStatus(), response.getProbability());
     }
 

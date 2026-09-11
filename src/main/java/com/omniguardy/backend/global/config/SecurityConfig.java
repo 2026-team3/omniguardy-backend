@@ -3,6 +3,8 @@ package com.omniguardy.backend.global.config;
 import com.omniguardy.backend.global.security.auth.CustomUserDetailsService;
 import com.omniguardy.backend.domain.auth.infrastructure.security.JwtAuthenticationFilter;
 import com.omniguardy.backend.domain.auth.infrastructure.security.JwtProvider;
+import com.omniguardy.backend.global.error.GlobalErrorCode;
+import com.omniguardy.backend.global.error.response.ErrorResponseWriter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,6 +26,7 @@ public class SecurityConfig {
 
     private final JwtProvider jwtProvider;
     private final CustomUserDetailsService customUserDetailsService;
+    private final ErrorResponseWriter errorResponseWriter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -36,6 +39,11 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, exception) ->
+                                errorResponseWriter.write(response, GlobalErrorCode.AUTHENTICATION_REQUIRED))
+                        .accessDeniedHandler((request, response, exception) ->
+                                errorResponseWriter.write(response, GlobalErrorCode.ACCESS_DENIED)))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/signup",
@@ -48,7 +56,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
-                        new JwtAuthenticationFilter(jwtProvider, customUserDetailsService),
+                        new JwtAuthenticationFilter(jwtProvider, customUserDetailsService, errorResponseWriter),
                         UsernamePasswordAuthenticationFilter.class
                 )
                 .build();
