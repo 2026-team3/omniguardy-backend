@@ -1,6 +1,6 @@
 name: 📝 Issue
 description: 새로운 이슈를 등록합니다.
-title: ""
+title: "[Issue] "
 labels: []
 
 body:
