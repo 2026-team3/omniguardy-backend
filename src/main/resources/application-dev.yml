@@ -36,7 +36,7 @@ app:
 ai:
   fastapi:
     vision:
-      base-url: https://ebay-stainable-jump.ngrok-free.dev #주소 바뀌면 변경하기
+      base-url: https://deodorant-dean-shrapnel.ngrok-free.dev #주소 바뀌면 변경하기
       endpoint: /analyze/vision
     audio:
       base-url: https://mauve-elsewhere-strenuous.ngrok-free.dev #주소 바뀌면 변경하기
