@@ -34,6 +34,12 @@ app:
     audio-url-prefix: /audio/tts
 
 ai:
+  agent:
+    enabled: ${AGENT_AI_ENABLED:false}
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      model-name: ${OPENAI_MODEL_NAME:gpt-5-mini}
+      timeout-seconds: ${OPENAI_TIMEOUT_SECONDS:60}
   fastapi:
     vision:
       base-url: https://deodorant-dean-shrapnel.ngrok-free.dev #주소 바뀌면 변경하기

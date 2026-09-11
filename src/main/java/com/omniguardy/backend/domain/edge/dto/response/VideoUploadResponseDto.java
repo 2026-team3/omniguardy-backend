@@ -1,6 +1,6 @@
 package com.omniguardy.backend.domain.edge.dto.response;
 
-import com.omniguardy.backend.domain.ai.dto.VisionResultDto;
+import com.omniguardy.backend.detection.application.model.VisionAnalysis;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -12,5 +12,5 @@ public class VideoUploadResponseDto {
 
     private String filename;
 
-    private VisionResultDto vision;
+    private VisionAnalysis vision;
 }

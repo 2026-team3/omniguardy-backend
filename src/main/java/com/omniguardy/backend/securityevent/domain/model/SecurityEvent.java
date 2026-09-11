@@ -1,4 +1,4 @@
-package com.omniguardy.backend.domain.securityevent.entity;
+package com.omniguardy.backend.securityevent.domain.model;
 
 import com.omniguardy.backend.domain.user.entity.User;
 import com.omniguardy.backend.global.entity.BaseTimeEntity;
@@ -98,6 +98,13 @@ public class SecurityEvent extends BaseTimeEntity {
         this.status = status;
     }
 
+    public void markCameraRequested() {
+        if (!SecurityEventStatus.AUDIO_DETECTED.name().equals(status)) {
+            throw new IllegalStateException("AUDIO_DETECTED 상태에서만 카메라를 요청할 수 있습니다.");
+        }
+        this.status = SecurityEventStatus.CAMERA_REQUESTED.name();
+    }
+
     public void updateVideoPath(String videoPath) {
         this.videoPath = videoPath;
     }
@@ -116,7 +123,7 @@ public class SecurityEvent extends BaseTimeEntity {
         this.personCount = personCount;
         this.videoDurationSeconds = videoDurationSeconds;
         this.visionAnalyzedAt = analyzedAt;
-        this.status = "VISION_ANALYZED";
+        this.status = SecurityEventStatus.VISION_ANALYZED.name();
     }
 
     public void updateAgentResult(
@@ -125,10 +132,14 @@ public class SecurityEvent extends BaseTimeEntity {
     ) {
         this.riskLevel = riskLevel;
         this.agentReason = agentReason;
-        this.status = "COMPLETED";
+        this.status = SecurityEventStatus.COMPLETED.name();
+    }
+
+    public boolean isVisionAnalyzed() {
+        return SecurityEventStatus.VISION_ANALYZED.name().equals(this.status);
     }
 
     public void fail() {
-        this.status = "FAILED";
+        this.status = SecurityEventStatus.FAILED.name();
     }
 }
