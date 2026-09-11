@@ -1,0 +1,147 @@
+package com.omniguardy.backend.domain.securityevent.domain.model;
+
+import com.omniguardy.backend.domain.user.domain.model.User;
+import com.omniguardy.backend.global.entity.BaseTimeEntity;
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Getter
+@Table(name = "security_events")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+public class SecurityEvent extends BaseTimeEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    // ?섎굹??Audio ??Video ??Vision ??Agent ?ш굔??臾띕뒗 ID
+    @Column(name = "event_id", nullable = false, unique = true, length = 36)
+    private String eventId;
+
+    // ?대떦 蹂댁븞 ?대깽?몄쓽 ?ъ슜??
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
+
+    // =========================
+    // Audio AI 寃곌낵
+    // =========================
+
+    @Column(name = "audio_status", length = 20)
+    private String audioStatus;
+
+    @Column(name = "audio_probability")
+    private Double audioProbability;
+
+    // ?꾩옱 濡쒖뺄 媛쒕컻??
+    @Column(name = "audio_path", length = 500)
+    private String audioPath;
+
+
+    // =========================
+    // Video
+    // =========================
+
+    // ?꾩옱??濡쒖뺄 寃쎈줈
+    // 諛고룷 ??S3 key ?먮뒗 URL 援ъ“濡?蹂寃?
+    @Column(name = "video_path", length = 500)
+    private String videoPath;
+
+
+    // =========================
+    // Vision AI 寃곌낵
+    // =========================
+
+    @Column(name = "vision_prediction", length = 20)
+    private String visionPrediction;
+
+    @Column(name = "vision_confidence")
+    private Double visionConfidence;
+
+    @Lob
+    @Column(name = "class_probabilities", columnDefinition = "TEXT")
+    private String classProbabilities;
+
+    @Column(name = "person_count")
+    private Integer personCount;
+
+    @Column(name = "video_duration_seconds")
+    private Double videoDurationSeconds;
+
+    @Column(name = "vision_analyzed_at", length = 50)
+    private String visionAnalyzedAt;
+
+
+    // =========================
+    // Agent AI 寃곌낵
+    // =========================
+
+    @Column(name = "risk_level", length = 20)
+    private String riskLevel;
+
+    @Column(name = "agent_reason", length = 1000)
+    private String agentReason;
+
+
+    // ?꾩옱 泥섎━ ?④퀎
+    // AUDIO_DETECTED / CAMERA_REQUESTED /
+    // VISION_ANALYZED / COMPLETED / FAILED
+    @Column(name = "status", nullable = false, length = 30)
+    private String status;
+
+
+    public void updateStatus(String status) {
+        this.status = status;
+    }
+
+    public void markCameraRequested() {
+        if (!SecurityEventStatus.AUDIO_DETECTED.name().equals(status)) {
+            throw new IllegalStateException("AUDIO_DETECTED ?곹깭?먯꽌留?移대찓?쇰? ?붿껌?????덉뒿?덈떎.");
+        }
+        this.status = SecurityEventStatus.CAMERA_REQUESTED.name();
+    }
+
+    public void updateVideoPath(String videoPath) {
+        this.videoPath = videoPath;
+    }
+
+    public void updateVisionResult(
+            String prediction,
+            Double confidence,
+            String classProbabilities,
+            Integer personCount,
+            Double videoDurationSeconds,
+            String analyzedAt
+    ) {
+        this.visionPrediction = prediction;
+        this.visionConfidence = confidence;
+        this.classProbabilities = classProbabilities;
+        this.personCount = personCount;
+        this.videoDurationSeconds = videoDurationSeconds;
+        this.visionAnalyzedAt = analyzedAt;
+        this.status = SecurityEventStatus.VISION_ANALYZED.name();
+    }
+
+    public void updateAgentResult(
+            String riskLevel,
+            String agentReason
+    ) {
+        this.riskLevel = riskLevel;
+        this.agentReason = agentReason;
+        this.status = SecurityEventStatus.COMPLETED.name();
+    }
+
+    public boolean isVisionAnalyzed() {
+        return SecurityEventStatus.VISION_ANALYZED.name().equals(this.status);
+    }
+
+    public void fail() {
+        this.status = SecurityEventStatus.FAILED.name();
+    }
+}
+
+

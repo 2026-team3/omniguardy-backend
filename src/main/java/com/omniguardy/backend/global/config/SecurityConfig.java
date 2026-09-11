@@ -1,8 +1,8 @@
 package com.omniguardy.backend.global.config;
 
 import com.omniguardy.backend.global.security.auth.CustomUserDetailsService;
-import com.omniguardy.backend.global.security.jwt.JwtAuthenticationFilter;
-import com.omniguardy.backend.global.security.jwt.JwtProvider;
+import com.omniguardy.backend.domain.auth.infrastructure.security.JwtAuthenticationFilter;
+import com.omniguardy.backend.domain.auth.infrastructure.security.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

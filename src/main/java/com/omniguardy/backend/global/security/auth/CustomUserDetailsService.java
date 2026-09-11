@@ -1,7 +1,7 @@
 package com.omniguardy.backend.global.security.auth;
 
-import com.omniguardy.backend.domain.user.entity.User;
-import com.omniguardy.backend.domain.user.repository.UserRepository;
+import com.omniguardy.backend.domain.user.domain.model.User;
+import com.omniguardy.backend.domain.user.domain.repository.UserRepository;
 import com.omniguardy.backend.global.exception.CustomException;
 import com.omniguardy.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
