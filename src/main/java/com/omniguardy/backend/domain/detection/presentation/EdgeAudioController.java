@@ -1,7 +1,7 @@
 package com.omniguardy.backend.domain.detection.presentation;
 
 import com.omniguardy.backend.domain.detection.application.model.AudioReceipt;
-import com.omniguardy.backend.domain.detection.application.usecase.ReceiveAudioUseCase;
+import com.omniguardy.backend.domain.detection.application.port.in.ReceiveAudioInputPort;
 import com.omniguardy.backend.domain.detection.presentation.dto.response.AudioUploadResponseDto;
 import com.omniguardy.backend.domain.detection.presentation.mapper.DetectionPresentationMapper;
 import com.omniguardy.backend.domain.detection.presentation.success.DetectionSuccessCode;
@@ -19,7 +19,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 @RequestMapping("/api/edge")
 public class EdgeAudioController {
-    private final ReceiveAudioUseCase receiveAudioUseCase;
+    private final ReceiveAudioInputPort receiveAudioUseCase;
     private final DetectionPresentationMapper mapper;
 
     @PostMapping(value = "/audio", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

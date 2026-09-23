@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
+import com.omniguardy.backend.domain.securityevent.domain.model.EventTriggerType;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.contains;
@@ -22,7 +23,7 @@ class LangChainRiskAssessmentAdapterTest {
         response.reason = "abnormal 0.99 諛?A18 0.46??洹쇨굅";
         when(service.assess(contains("classProbabilities"))).thenReturn(response);
         var adapter = new LangChainRiskAssessmentAdapter(service, new ObjectMapper());
-        var result = adapter.assess(new AgentContext("event", new AgentContext.Audio("abnormal", 0.99),
+        var result = adapter.assess(new AgentContext("event", EventTriggerType.AUDIO, new AgentContext.Audio("abnormal", 0.99),
                 new AgentContext.Vision("A18", 0.46, Map.of("A18", 0.46), 0)));
         assertEquals(RiskLevel.HIGH, result.riskLevel());
         assertEquals(85, result.riskScore());
@@ -36,7 +37,7 @@ class LangChainRiskAssessmentAdapterTest {
         response.reason = "洹쇨굅";
         when(service.assess(anyString())).thenReturn(response);
         var adapter = new LangChainRiskAssessmentAdapter(service, new ObjectMapper());
-        assertThrows(BusinessException.class, () -> adapter.assess(new AgentContext("event",
+        assertThrows(BusinessException.class, () -> adapter.assess(new AgentContext("event", EventTriggerType.AUDIO,
                 new AgentContext.Audio("abnormal", 1), new AgentContext.Vision("A18", 1, Map.of(), 0))));
     }
 }

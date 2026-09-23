@@ -1,5 +1,6 @@
 package com.omniguardy.backend.domain.detection.infrastructure.mqtt;
 
+import com.omniguardy.backend.domain.detection.application.model.CameraStartCommand;
 import com.omniguardy.backend.domain.detection.application.port.out.CameraCommandPort;
 import com.omniguardy.backend.global.mqtt.MqttConfig.MqttGateway;
 import lombok.RequiredArgsConstructor;
@@ -9,10 +10,18 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class MqttCameraCommandAdapter implements CameraCommandPort {
-    private final MqttGateway mqttGateway;
-    @Value("${mqtt.topic.camera}") private String cameraTopic;
 
-    @Override public void startCamera(String eventId) {
+    private final MqttGateway mqttGateway;
+
+    @Value("${mqtt.topic.camera}")
+    private String cameraTopic;
+
+    // =========================
+    // 기존 Audio Trigger
+    // =========================
+    @Override
+    public void startCamera(String eventId) {
+
         String payload = """
                 {
                   "type": "CAMERA_START",
@@ -20,6 +29,32 @@ public class MqttCameraCommandAdapter implements CameraCommandPort {
                   "eventId": "%s"
                 }
                 """.formatted(eventId);
+
+        mqttGateway.sendToMqtt(payload, cameraTopic);
+    }
+
+    // =========================
+    // 신규 Keypad Trigger
+    // =========================
+    @Override
+    public void startCamera(CameraStartCommand command) {
+
+        String payload = """
+                {
+                  "type": "CAMERA_START",
+                  "duration": %d,
+                  "triggerId": "%s",
+                  "triggerType": "%s",
+                  "securityEventId": null,
+                  "triggeredAt": "%s"
+                }
+                """.formatted(
+                command.duration(),
+                command.triggerId(),
+                command.triggerType().name(),
+                command.triggeredAt()
+        );
+
         mqttGateway.sendToMqtt(payload, cameraTopic);
     }
 }

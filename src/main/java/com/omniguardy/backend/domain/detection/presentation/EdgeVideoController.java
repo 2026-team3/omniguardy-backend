@@ -1,7 +1,9 @@
 package com.omniguardy.backend.domain.detection.presentation;
 
+import com.omniguardy.backend.domain.detection.application.model.TriggerType;
 import com.omniguardy.backend.domain.detection.application.model.VideoReceipt;
-import com.omniguardy.backend.domain.detection.application.usecase.ReceiveVideoUseCase;
+import com.omniguardy.backend.domain.detection.application.model.VideoTriggerContext;
+import com.omniguardy.backend.domain.detection.application.port.in.ReceiveVideoInputPort;
 import com.omniguardy.backend.domain.detection.presentation.dto.response.VideoUploadResponseDto;
 import com.omniguardy.backend.domain.detection.presentation.mapper.DetectionPresentationMapper;
 import com.omniguardy.backend.domain.detection.presentation.success.DetectionSuccessCode;
@@ -19,13 +21,93 @@ import java.io.IOException;
 @RequiredArgsConstructor
 @RequestMapping("/api/edge")
 public class EdgeVideoController {
-    private final ReceiveVideoUseCase receiveVideoUseCase;
+
+    private final ReceiveVideoInputPort receiveVideoInputPort;
     private final DetectionPresentationMapper mapper;
 
-    @PostMapping(value = "/video", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(
+            value = "/video",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     public ResponseEntity<ApiResponse<VideoUploadResponseDto>> uploadVideo(
-            @RequestPart("file") MultipartFile file, @RequestParam("eventId") String eventId) throws IOException {
-        VideoReceipt result = receiveVideoUseCase.receive(mapper.toMediaFile(file), eventId);
-        return SuccessResponse.of(DetectionSuccessCode.VIDEO_ANALYZED, mapper.toResponse(result));
+
+            @RequestPart("file")
+            MultipartFile file,
+
+            @RequestParam(
+                    value = "eventId",
+                    required = false
+            )
+            String eventId,
+
+            @RequestParam(
+                    value = "triggerId",
+                    required = false
+            )
+            String triggerId,
+
+            @RequestParam(
+                    value = "triggerType",
+                    required = false
+            )
+            String triggerType,
+
+            @RequestParam(
+                    value = "securityEventId",
+                    required = false
+            )
+            String securityEventId,
+
+            @RequestParam(
+                    value = "triggeredAt",
+                    required = false
+            )
+            String triggeredAt
+
+    ) throws IOException {
+
+        TriggerType resolvedTriggerType;
+
+        /*
+         * 기존 Raspberry Pi AUDIO 요청:
+         *
+         * file
+         * eventId
+         *
+         * triggerType은 없음.
+         */
+        if ((triggerType == null || triggerType.isBlank())
+                && eventId != null
+                && !eventId.isBlank()) {
+
+            resolvedTriggerType = TriggerType.AUDIO;
+
+        } else {
+
+            resolvedTriggerType =
+                    TriggerType.valueOf(
+                            triggerType.toUpperCase()
+                    );
+        }
+
+        VideoTriggerContext triggerContext =
+                new VideoTriggerContext(
+                        eventId,
+                        triggerId,
+                        resolvedTriggerType,
+                        securityEventId,
+                        triggeredAt
+                );
+
+        VideoReceipt result =
+                receiveVideoInputPort.receive(
+                        mapper.toMediaFile(file),
+                        triggerContext
+                );
+
+        return SuccessResponse.of(
+                DetectionSuccessCode.VIDEO_ANALYZED,
+                mapper.toResponse(result)
+        );
     }
 }

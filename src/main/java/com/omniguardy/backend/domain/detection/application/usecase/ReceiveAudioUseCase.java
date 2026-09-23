@@ -15,10 +15,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
+import java.time.OffsetDateTime;
+import com.omniguardy.backend.domain.detection.application.port.in.ReceiveAudioInputPort;
 
 @Service
 @RequiredArgsConstructor
-public class ReceiveAudioUseCase {
+public class ReceiveAudioUseCase implements ReceiveAudioInputPort {
     private static final long CAMERA_COOLDOWN_MS = 12_000L;
     private long lastCameraTriggeredAt;
 
@@ -41,6 +43,7 @@ public class ReceiveAudioUseCase {
         MediaStoragePort.StoredMedia stored = mediaStoragePort.saveAudio(eventId, file);
         SecurityEvent event = SecurityEvent.builder().eventId(eventId).audioStatus(analysis.status())
                 .audioProbability(analysis.probability()).audioPath(stored.path()).status("AUDIO_DETECTED").build();
+        event.connectAudioTrigger(eventId, OffsetDateTime.now());
         securityEventRepository.save(event);
         cameraCommandPort.startCamera(eventId);
         event.markCameraRequested();
