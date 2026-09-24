@@ -2,7 +2,9 @@ package com.omniguardy.backend.domain.detection.infrastructure.fastapi;
 
 import com.omniguardy.backend.domain.detection.application.model.*;
 import com.omniguardy.backend.domain.detection.application.port.out.VisionAnalysisPort;
+import com.omniguardy.backend.domain.detection.domain.error.DetectionErrorCode;
 import com.omniguardy.backend.domain.detection.infrastructure.fastapi.dto.VisionApiResponse;
+import com.omniguardy.backend.global.error.exception.BusinessException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
@@ -11,6 +13,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Component
@@ -74,7 +77,8 @@ public class VisionFastApiAdapter implements VisionAnalysisPort {
             );
         }
 
-        VisionApiResponse response =
+        try {
+            VisionApiResponse response =
                 restClient.post()
 
                         // 중요
@@ -92,21 +96,21 @@ public class VisionFastApiAdapter implements VisionAnalysisPort {
                                 VisionApiResponse.class
                         );
 
-        if (response == null
-                || response.result() == null) {
+            if (response == null || response.result() == null) {
+                throw new BusinessException(DetectionErrorCode.VISION_ANALYSIS_FAILED);
+            }
 
-            throw new IllegalStateException(
-                    "Vision API response is empty"
-            );
+            return toVisionAnalysis(response, triggerContext);
+        } catch (BusinessException exception) {
+            throw exception;
+        } catch (RuntimeException exception) {
+            throw new BusinessException(DetectionErrorCode.VISION_ANALYSIS_FAILED, exception);
         }
-
-        return toVisionAnalysis(
-                response
-        );
     }
 
     private VisionAnalysis toVisionAnalysis(
-            VisionApiResponse response
+            VisionApiResponse response,
+            VideoTriggerContext triggerContext
     ) {
 
         VisionApiResponse.Result result =
@@ -190,19 +194,11 @@ public class VisionFastApiAdapter implements VisionAnalysisPort {
                         .toList();
 
         return new VisionAnalysis(
-                result.trigger().triggerId(),
-
-                TriggerType.valueOf(
-                        result.trigger()
-                                .triggerType()
-                                .toUpperCase()
-                ),
-
-                result.trigger()
-                        .securityEventId(),
-
-                result.trigger()
-                        .triggeredAt(),
+                triggerContext.triggerId(),
+                triggerContext.triggerType(),
+                triggerContext.securityEventId(),
+                triggerContext.triggeredAt() == null || triggerContext.triggeredAt().isBlank()
+                        ? null : OffsetDateTime.parse(triggerContext.triggeredAt()),
 
                 result.analyzedAt(),
 
