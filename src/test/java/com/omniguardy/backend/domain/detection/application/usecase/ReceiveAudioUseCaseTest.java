@@ -35,6 +35,9 @@ class ReceiveAudioUseCaseTest {
         var receipt = useCase.receive(file);
         assertDoesNotThrow(() -> java.util.UUID.fromString(receipt.eventId()));
         verify(repository).save(argThat(event -> receipt.eventId().equals(event.getEventId())
+                && receipt.eventId().equals(event.getTriggerId())
+                && event.getTriggerType() == com.omniguardy.backend.domain.securityevent.domain.model.EventTriggerType.AUDIO
+                && event.getTriggeredAt() != null
                 && "CAMERA_REQUESTED".equals(event.getStatus())));
         verify(camera).startCamera(receipt.eventId());
     }

@@ -11,6 +11,14 @@ import org.mockito.ArgumentCaptor;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.Optional;
+import com.omniguardy.backend.domain.securityevent.domain.model.EventTriggerType;
+import com.omniguardy.backend.domain.securityevent.infrastructure.agent.LangChainRiskAssessmentAdapter;
+import com.omniguardy.backend.domain.securityevent.infrastructure.agent.RiskAssessmentAiService;
+import com.omniguardy.backend.domain.securityevent.infrastructure.agent.AgentStructuredResponse;
+import com.omniguardy.backend.global.error.exception.BusinessException;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -26,6 +34,8 @@ class AnalyzeAgentRiskUseCaseTest {
         useCase.analyze("event-1");
         ArgumentCaptor<AgentContext> captor = ArgumentCaptor.forClass(AgentContext.class);
         verify(port).assess(captor.capture());
+        assertEquals(EventTriggerType.AUDIO, captor.getValue().triggerType());
+        assertTrue(captor.getValue().vision().visionEvents().isEmpty());
         assertEquals("abnormal", captor.getValue().audio().status());
         assertEquals(0.999342, captor.getValue().audio().probability());
         assertEquals("A18", captor.getValue().vision().prediction());
@@ -48,11 +58,66 @@ class AnalyzeAgentRiskUseCaseTest {
     }
 
     private SecurityEvent visionAnalyzedEvent() {
-        SecurityEvent event = SecurityEvent.builder().eventId("event-1").audioStatus("abnormal")
+        SecurityEvent event = SecurityEvent.builder().eventId("event-1").triggerType(EventTriggerType.AUDIO).audioStatus("abnormal")
                 .audioProbability(0.999342).status("CAMERA_REQUESTED").build();
         event.updateVisionResult("A18", 0.464551, "{\"N1\":0.035310,\"A17\":0.222806}",
-                0, 10.0, "2026-09-11T00:00:00Z");
+                "[]", 0, 10.0, java.time.OffsetDateTime.parse("2026-09-11T00:00:00Z"));
         return event;
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"   ", "[]", "null"})
+    void missingVisionEventsBecomeEmptyArray(String json) {
+        SecurityEvent event = SecurityEvent.builder().eventId("legacy").status("VISION_ANALYZED")
+                .visionEvents(json).build();
+        when(repository.findByEventId("legacy")).thenReturn(Optional.of(event));
+        when(port.assess(any())).thenReturn(new AgentAssessment(RiskLevel.LOW, 0, "No evidence"));
+        useCase.analyze("legacy");
+        var captor = ArgumentCaptor.forClass(AgentContext.class);
+        verify(port).assess(captor.capture());
+        assertTrue(captor.getValue().vision().visionEvents().isEmpty());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"invalid-json", "{}"})
+    void malformedVisionEventsDoNotReachAgent(String json) {
+        SecurityEvent event = SecurityEvent.builder().eventId("invalid").status("VISION_ANALYZED")
+                .visionEvents(json).build();
+        when(repository.findByEventId("invalid")).thenReturn(Optional.of(event));
+        assertThrows(BusinessException.class, () -> useCase.analyze("invalid"));
+        verifyNoInteractions(port);
+        assertEquals("FAILED", event.getStatus());
+    }
+
+    @Test void keypadEventsReachAiServiceAsStructuredArrayWithAllFields() {
+        String events = """
+                [{"eventType":"OTHER_EVENT","confidence":0.9,"detectedFrame":20,
+                  "details":{"label":"entry","count":2,"nested":{"visible":true}}}]
+                """;
+        SecurityEvent event = SecurityEvent.builder().eventId("keypad-event").triggerType(EventTriggerType.KEYPAD)
+                .status("VISION_ANALYZED").visionEvents(events).personCount(1).build();
+        when(repository.findByEventId("keypad-event")).thenReturn(Optional.of(event));
+        RiskAssessmentAiService service = mock(RiskAssessmentAiService.class);
+        AgentStructuredResponse response = new AgentStructuredResponse();
+        response.riskLevel = "LOW";
+        response.riskScore = 10;
+        response.reason = "Vision evidence";
+        when(service.assess(anyString())).thenReturn(response);
+        ObjectMapper mapper = new ObjectMapper();
+        new AnalyzeAgentRiskUseCase(repository, new LangChainRiskAssessmentAdapter(service, mapper), mapper)
+                .analyze("keypad-event");
+        var captor = ArgumentCaptor.forClass(String.class);
+        verify(service).assess(captor.capture());
+        var json = mapper.readTree(captor.getValue());
+        assertEquals("KEYPAD", json.get("triggerType").asString());
+        assertTrue(json.get("audio").get("status").isNull());
+        assertEquals(0.0, json.get("audio").get("probability").asDouble());
+        var actualEvents = json.get("vision").get("visionEvents");
+        assertTrue(actualEvents.isArray());
+        assertEquals(mapper.readTree(events), actualEvents);
+        assertFalse(json.has("triggerId"));
+        assertFalse(json.has("triggeredAt"));
     }
 }
 

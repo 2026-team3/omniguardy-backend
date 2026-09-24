@@ -1,12 +1,12 @@
-package com.omniguardy.backend.domain.detection.application.port.out;
+package com.omniguardy.backend.domain.detection.application.port.in;
 
 import com.omniguardy.backend.domain.detection.application.model.MediaFile;
+import com.omniguardy.backend.domain.detection.application.model.VideoReceipt;
 import com.omniguardy.backend.domain.detection.application.model.VideoTriggerContext;
-import com.omniguardy.backend.domain.detection.application.model.VisionAnalysis;
 
-public interface VisionAnalysisPort {
+public interface ReceiveVideoInputPort {
 
-    VisionAnalysis analyze(
+    VideoReceipt receive(
             MediaFile file,
             VideoTriggerContext triggerContext
     );

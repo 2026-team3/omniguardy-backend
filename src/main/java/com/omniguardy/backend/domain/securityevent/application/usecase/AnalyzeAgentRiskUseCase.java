@@ -14,6 +14,7 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -41,11 +42,20 @@ public class AnalyzeAgentRiskUseCase {
     }
 
     private AgentContext toContext(SecurityEvent event) {
-        return new AgentContext(event.getEventId(),
+        return new AgentContext(event.getEventId(), event.getTriggerType(),
                 new AgentContext.Audio(event.getAudioStatus(), value(event.getAudioProbability())),
                 new AgentContext.Vision(event.getVisionPrediction(), value(event.getVisionConfidence()),
                         probabilities(event.getClassProbabilities()),
-                        event.getPersonCount() == null ? 0 : event.getPersonCount()));
+                        event.getPersonCount() == null ? 0 : event.getPersonCount(), visionEvents(event.getVisionEvents())));
+    }
+
+    private List<AgentContext.VisionEvent> visionEvents(String json) {
+        if (json == null || json.isBlank()) return List.of();
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<AgentContext.VisionEvent>>() {});
+        } catch (JacksonException exception) {
+            throw new BusinessException(SecurityEventErrorCode.INVALID_AGENT_CONTEXT, exception);
+        }
     }
 
     private Map<String, Double> probabilities(String json) {
