@@ -9,15 +9,20 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpMethod;
+import org.springframework.mock.http.client.MockClientHttpRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
 import java.time.OffsetDateTime;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 class VisionFastApiAdapterTest {
@@ -102,6 +107,71 @@ class VisionFastApiAdapterTest {
         assertEquals(DetectionErrorCode.VISION_ANALYSIS_FAILED, exception.getErrorCode());
         assertNotNull(exception.getCause());
         server.verify();
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = " ")
+    void sendsKeypadMultipartWithoutSecurityEventId(String securityEventId) {
+        VideoTriggerContext keypad = new VideoTriggerContext(
+                null, "keypad-trigger", TriggerType.KEYPAD, securityEventId, "2026-09-24T12:00:00+09:00");
+        expectMultipart(Map.of(
+                "triggerId", "keypad-trigger",
+                "triggerType", "KEYPAD",
+                "triggeredAt", "2026-09-24T12:00:00+09:00"));
+
+        adapter.analyze(file, keypad);
+
+        server.verify();
+    }
+
+    @Test
+    void sendsAudioMultipartWithSecurityEventId() {
+        expectMultipart(Map.of(
+                "triggerId", "original-trigger",
+                "triggerType", "AUDIO",
+                "triggeredAt", "2026-09-23T12:00:00+09:00",
+                "securityEventId", "event"));
+
+        adapter.analyze(file, context);
+
+        server.verify();
+    }
+
+    private void expectMultipart(Map<String, String> fields) {
+        server.expect(requestTo("http://vision.test/analyze"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(request -> {
+                    MediaType contentType = request.getHeaders().getContentType();
+                    assertNotNull(contentType);
+                    assertTrue(MediaType.MULTIPART_FORM_DATA.isCompatibleWith(contentType));
+                    String boundary = contentType.getParameter("boundary");
+                    assertNotNull(boundary);
+                    // ISO-8859-1 preserves every byte, including the binary file part.
+                    String body = new String(((MockClientHttpRequest) request).getBodyAsBytes(),
+                            StandardCharsets.ISO_8859_1);
+                    String[] parts = body.split(Pattern.quote("--" + boundary), -1);
+                    assertEquals(fields.size() + 3, parts.length);
+                    assertEquals("", parts[0]);
+                    assertEquals("--\r\n", parts[parts.length - 1]);
+                    fields.forEach((name, value) -> assertMultipartPart(body, boundary,
+                            "name=\"" + name + "\"", value));
+                    if (!fields.containsKey("securityEventId")) {
+                        assertFalse(body.contains("name=\"securityEventId\""));
+                    }
+                    assertMultipartPart(body, boundary,
+                            "name=\"file\"; filename=\"video.mp4\"",
+                            new String(file.bytes(), StandardCharsets.ISO_8859_1));
+                })
+                .andRespond(withSuccess("{\"result\":{}}", MediaType.APPLICATION_JSON));
+    }
+
+    private void assertMultipartPart(String body, String boundary, String disposition, String value) {
+        String pattern = Pattern.quote("--" + boundary + "\r\nContent-Disposition: form-data; "
+                + disposition + "\r\n")
+                + "(?:[^\\r\\n]+\\r\\n)*\\r\\n"
+                + Pattern.quote(value + "\r\n--" + boundary);
+        assertTrue(Pattern.compile(pattern).matcher(body).find(), "Missing or incorrect multipart part: " + disposition);
     }
 
     private void respond(String response) {
