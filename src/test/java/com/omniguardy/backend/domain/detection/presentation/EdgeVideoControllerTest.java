@@ -74,20 +74,27 @@ class EdgeVideoControllerTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"AUDIO,AUDIO,event", "audio,AUDIO,event", "AuDiO,AUDIO,event",
-            "KEYPAD,KEYPAD,", "keypad,KEYPAD,", "KeYpAd,KEYPAD,"})
-    void preservesValidTriggerContext(String triggerType, TriggerType expectedType, String eventId) throws Exception {
-        mvc.perform(request(triggerType, eventId)).andExpect(status().isOk());
+    @CsvSource({"AUDIO,AUDIO,event,security-event", "audio,AUDIO,event,security-event",
+            "AuDiO,AUDIO,event,security-event", "KEYPAD,KEYPAD,,", "keypad,KEYPAD,,", "KeYpAd,KEYPAD,,"})
+    void preservesValidTriggerContext(String triggerType, TriggerType expectedType,
+                                     String eventId, String securityEventId) throws Exception {
+        mvc.perform(request(triggerType, eventId, securityEventId)).andExpect(status().isOk());
         verify(port).receive(any(), eq(new VideoTriggerContext(
-                eventId, "trigger", expectedType, "security-event", "2026-09-24T12:00:00+09:00")));
+                eventId, "trigger", expectedType, securityEventId, "2026-09-24T12:00:00+09:00")));
     }
 
     private MockMultipartHttpServletRequestBuilder request(String triggerType, String eventId) {
+        return request(triggerType, eventId, "security-event");
+    }
+
+    private MockMultipartHttpServletRequestBuilder request(String triggerType, String eventId, String securityEventId) {
         var request = multipart("/api/edge/video")
                 .file(new MockMultipartFile("file", "video.mp4", "video/mp4", new byte[]{1}))
                 .param("triggerId", "trigger")
-                .param("securityEventId", "security-event")
                 .param("triggeredAt", "2026-09-24T12:00:00+09:00");
+        if (securityEventId != null) {
+            request.param("securityEventId", securityEventId);
+        }
         if (triggerType != null) {
             request.param("triggerType", triggerType);
         }
