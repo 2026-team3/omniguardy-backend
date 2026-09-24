@@ -4,10 +4,13 @@ import com.omniguardy.backend.domain.detection.application.model.TriggerType;
 import com.omniguardy.backend.domain.detection.application.model.VideoReceipt;
 import com.omniguardy.backend.domain.detection.application.model.VideoTriggerContext;
 import com.omniguardy.backend.domain.detection.application.port.in.ReceiveVideoInputPort;
+import com.omniguardy.backend.domain.detection.domain.error.DetectionErrorCode;
 import com.omniguardy.backend.domain.detection.presentation.dto.response.VideoUploadResponseDto;
 import com.omniguardy.backend.domain.detection.presentation.mapper.DetectionPresentationMapper;
 import com.omniguardy.backend.domain.detection.presentation.success.DetectionSuccessCode;
 import com.omniguardy.backend.global.response.ApiResponse;
+import com.omniguardy.backend.global.error.GlobalErrorCode;
+import com.omniguardy.backend.global.error.exception.BusinessException;
 import com.omniguardy.backend.global.success.SuccessResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Locale;
 
 @RestController
 @RequiredArgsConstructor
@@ -76,18 +80,20 @@ public class EdgeVideoController {
          *
          * triggerType은 없음.
          */
-        if ((triggerType == null || triggerType.isBlank())
-                && eventId != null
-                && !eventId.isBlank()) {
+        if (triggerType == null || triggerType.isBlank()) {
+            if (eventId == null || eventId.isBlank()) {
+                throw new BusinessException(DetectionErrorCode.EVENT_ID_REQUIRED);
+            }
 
             resolvedTriggerType = TriggerType.AUDIO;
 
         } else {
 
-            resolvedTriggerType =
-                    TriggerType.valueOf(
-                            triggerType.toUpperCase()
-                    );
+            try {
+                resolvedTriggerType = TriggerType.valueOf(triggerType.toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException exception) {
+                throw new BusinessException(GlobalErrorCode.INVALID_REQUEST, exception);
+            }
         }
 
         VideoTriggerContext triggerContext =
