@@ -128,7 +128,7 @@ public class VisionFastApiAdapter implements VisionAnalysisPort {
             behavior =
                     new VisionBehavior(
                             result.behavior().prediction(),
-                            result.behavior().behaviorName(),
+                            result.behavior().label(),
                             result.behavior().confidence(),
                             result.behavior()
                                     .classProbabilities()
