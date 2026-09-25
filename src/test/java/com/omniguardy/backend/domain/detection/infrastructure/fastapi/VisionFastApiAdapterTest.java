@@ -2,6 +2,7 @@ package com.omniguardy.backend.domain.detection.infrastructure.fastapi;
 
 import com.omniguardy.backend.domain.detection.application.model.*;
 import com.omniguardy.backend.domain.detection.domain.error.DetectionErrorCode;
+import com.omniguardy.backend.domain.detection.infrastructure.fastapi.dto.VisionApiResponse;
 import com.omniguardy.backend.global.error.exception.BusinessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,10 +15,12 @@ import org.springframework.mock.http.client.MockClientHttpRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.OffsetDateTime;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -49,7 +52,7 @@ class VisionFastApiAdapterTest {
     void usesContextWhilePreservingAnalysisResults(String trigger) {
         respond("""
                 {"result":{"trigger":%s,"analyzedAt":"2026-09-23T12:01:00+09:00",
-                  "behavior":{"prediction":"A18","behaviorName":"test","confidence":0.9,
+                  "behavior":{"prediction":"A18","label":"test","confidence":0.9,
                               "classProbabilities":{"A18":0.9}},
                   "video":{"fileName":"video.mp4","durationSeconds":3.0,"fps":30.0,"frameCount":90},
                   "observations":{"trackedPersonCount":2,"hasTracking":true,"hasPose":true},
@@ -65,6 +68,7 @@ class VisionFastApiAdapterTest {
         assertEquals(OffsetDateTime.parse("2026-09-23T12:01:00+09:00").toInstant(),
                 analysis.analyzedAt().toInstant());
         assertEquals("A18", analysis.prediction());
+        assertEquals("test", analysis.behavior().label());
         assertEquals(0.9, analysis.confidence());
         assertEquals(Map.of("A18", 0.9), analysis.classProbabilities());
         assertEquals(3.0, analysis.videoDurationSeconds());
@@ -164,6 +168,124 @@ class VisionFastApiAdapterTest {
                             new String(file.bytes(), StandardCharsets.ISO_8859_1));
                 })
                 .andRespond(withSuccess("{\"result\":{}}", MediaType.APPLICATION_JSON));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"N1", "A18", "A20", "A21", "A17", "A19", "FUTURE_CLASS"})
+    void mapsAudioBehaviorWithoutRestrictingPrediction(String prediction) {
+        respond(successResponse("AUDIO", "\"event\"", """
+                {"prediction":"%s","label":"repeated_door_knocking","confidence":0.91,
+                 "classProbabilities":{"N1":0.03,"A18":0.02,"A20":0.04,"A21":0.91}}
+                """.formatted(prediction), "[]"));
+
+        VisionAnalysis analysis = adapter.analyze(file, context);
+
+        assertEquals(new VisionBehavior(prediction, "repeated_door_knocking", 0.91,
+                Map.of("N1", 0.03, "A18", 0.02, "A20", 0.04, "A21", 0.91)), analysis.behavior());
+        assertEquals(TriggerType.AUDIO, analysis.triggerType());
+        assertEquals("event", analysis.securityEventId());
+        assertTrue(analysis.visionEvents().isEmpty());
+        assertCommonResponseFields(analysis);
+        var serialized = JsonMapper.builder().build().valueToTree(analysis.behavior());
+        assertEquals("repeated_door_knocking", serialized.get("label").asText());
+        assertFalse(serialized.has("behaviorName"));
+        server.verify();
+    }
+
+    @Test
+    void mapsNormalKeypadWithNullBehaviorAndEmptyEvents() {
+        respond(successResponse("KEYPAD", "null", "null", "[]"));
+
+        VisionAnalysis analysis = adapter.analyze(file, keypadContext());
+
+        assertKeypadResponse(analysis);
+        assertEquals(List.of(), analysis.visionEvents());
+        server.verify();
+    }
+
+    @Test
+    void mapsSilentSignalDetails() {
+        respond(successResponse("KEYPAD", "null", "null", """
+                [{"eventType":"SILENT_SIGNAL","confidence":0.94,"detectedFrame":156,
+                  "details":{"signalCode":"S1","signalName":"emergency_hand_gesture"}}]
+                """));
+
+        VisionAnalysis analysis = adapter.analyze(file, keypadContext());
+
+        assertKeypadResponse(analysis);
+        assertEquals(List.of(new VisionEvent("SILENT_SIGNAL", 0.94, 156,
+                Map.of("signalCode", "S1", "signalName", "emergency_hand_gesture"))), analysis.visionEvents());
+        server.verify();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"REAR_CLOSE_APPROACH_SUSPECTED", "FUTURE_EVENT"})
+    void preservesFlexibleEventTypesAndDetails(String eventType) {
+        respond(successResponse("KEYPAD", "null", "null", """
+                [{"eventType":"%s","confidence":0.82,"detectedFrame":184,
+                  "details":{"personCount":2,"delayedEntrySeconds":2.1,
+                    "distanceClosingDetected":true,"closeProximityDurationSeconds":2.8,
+                    "nested":{"name":"example","enabled":false,"values":[1,"two",true]}}}]
+                """.formatted(eventType)));
+
+        VisionAnalysis analysis = adapter.analyze(file, keypadContext());
+
+        assertKeypadResponse(analysis);
+        assertEquals(List.of(new VisionEvent(eventType, 0.82, 184, Map.of(
+                "personCount", 2, "delayedEntrySeconds", 2.1,
+                "distanceClosingDetected", true, "closeProximityDurationSeconds", 2.8,
+                "nested", Map.of("name", "example", "enabled", false,
+                        "values", List.of(1, "two", true))))), analysis.visionEvents());
+        server.verify();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"AUDIO", "KEYPAD"})
+    void deserializesResponseTriggerAndOffsetDateTimes(String triggerType) {
+        String securityEventId = "AUDIO".equals(triggerType) ? "\"event\"" : "null";
+        VisionApiResponse response = JsonMapper.builder().build().readValue(
+                successResponse(triggerType, securityEventId, "null", "[]"), VisionApiResponse.class);
+
+        assertEquals("success", response.status());
+        assertEquals("response-trigger", response.result().trigger().triggerId());
+        assertEquals(triggerType, response.result().trigger().triggerType());
+        assertEquals("AUDIO".equals(triggerType) ? "event" : null,
+                response.result().trigger().securityEventId());
+        assertEquals(OffsetDateTime.parse("2026-09-23T12:00:00+09:00").toInstant(),
+                response.result().trigger().triggeredAt().toInstant());
+        assertEquals(OffsetDateTime.parse("2026-09-23T12:00:10+09:00").toInstant(),
+                response.result().analyzedAt().toInstant());
+    }
+
+    private VideoTriggerContext keypadContext() {
+        return new VideoTriggerContext(null, "keypad-trigger", TriggerType.KEYPAD, null, context.triggeredAt());
+    }
+
+    private void assertKeypadResponse(VisionAnalysis analysis) {
+        assertEquals(TriggerType.KEYPAD, analysis.triggerType());
+        assertNull(analysis.securityEventId());
+        assertNull(analysis.behavior());
+        assertCommonResponseFields(analysis);
+    }
+
+    private void assertCommonResponseFields(VisionAnalysis analysis) {
+        assertEquals(new VisionVideoInfo("door_video.mp4", 10.0, 30.0, 300), analysis.video());
+        assertEquals(new VisionObservations(2, true, false), analysis.observations());
+        assertEquals(OffsetDateTime.parse(context.triggeredAt()), analysis.triggeredAt());
+        assertEquals(OffsetDateTime.parse("2026-09-23T12:00:10+09:00").toInstant(),
+                analysis.analyzedAt().toInstant());
+    }
+
+    private String successResponse(String triggerType, String securityEventId, String behavior, String events) {
+        return """
+                {"status":"success","result":{
+                  "trigger":{"triggerId":"response-trigger","triggerType":"%s",
+                    "securityEventId":%s,"triggeredAt":"2026-09-23T12:00:00+09:00"},
+                  "analyzedAt":"2026-09-23T12:00:10+09:00",
+                  "video":{"fileName":"door_video.mp4","durationSeconds":10.0,"fps":30.0,"frameCount":300},
+                  "behavior":%s,"visionEvents":%s,
+                  "observations":{"trackedPersonCount":2,"hasTracking":true,"hasPose":false}}}
+                """.formatted(triggerType, securityEventId, behavior, events);
     }
 
     private void assertMultipartPart(String body, String boundary, String disposition, String value) {

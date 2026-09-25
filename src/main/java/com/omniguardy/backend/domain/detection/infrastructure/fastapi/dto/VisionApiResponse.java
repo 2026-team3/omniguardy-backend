@@ -37,7 +37,7 @@ public record VisionApiResponse(
 
     public record Behavior(
             String prediction,
-            String behaviorName,
+            String label,
             Double confidence,
             Map<String, Double> classProbabilities
     ) {
