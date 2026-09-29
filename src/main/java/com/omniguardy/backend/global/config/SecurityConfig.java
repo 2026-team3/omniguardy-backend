@@ -52,7 +52,8 @@ public class SecurityConfig {
                                 "/hello",
                                 "/audio/tts/**",
                                 "/api/edge/**",
-                                "/api/keypad/**"
+                                "/api/keypad/**",
+                                "/api/sounds/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
