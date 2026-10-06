@@ -27,7 +27,7 @@ public class AudioFastApiAdapter implements AudioAnalysisPort {
                 .contentType(MediaType.MULTIPART_FORM_DATA).body(body.build()).retrieve()
                 .body(AudioPredictResponseDto.class);
         if (response == null) throw new BusinessException(DetectionErrorCode.AUDIO_ANALYSIS_FAILED);
-        return new AudioAnalysis(response.getStatus(), response.getProbability());
+        return new AudioAnalysis(response.getStatus(), response.getPredictedProbability());
     }
 
     private ByteArrayResource resource(MediaFile file) {

@@ -22,14 +22,14 @@ class ReceiveAudioUseCaseTest {
     private final MediaFile file = new MediaFile("chunk.wav", "audio/wav", new byte[]{1, 2, 3});
 
     @Test void normalDoesNotCreateEventOrStartCamera() {
-        when(audio.analyze(any())).thenReturn(new AudioAnalysis("normal", 0.1));
+        when(audio.analyze(any())).thenReturn(new AudioAnalysis("NO_EVENT", 0.982));
         var receipt = useCase.receive(file);
         assertNull(receipt.eventId());
         verifyNoInteractions(storage, camera, repository);
     }
 
     @Test void abnormalCreatesUuidEventAndStartsCamera() {
-        when(audio.analyze(any())).thenReturn(new AudioAnalysis("abnormal", 0.999342));
+        when(audio.analyze(any())).thenReturn(new AudioAnalysis("KNOCK_EVENT", 0.995));
         when(storage.saveAudio(anyString(), any())).thenAnswer(invocation ->
                 new MediaStoragePort.StoredMedia(invocation.getArgument(0) + "_chunk.wav", "./uploads/audio/file"));
         var receipt = useCase.receive(file);
@@ -43,7 +43,7 @@ class ReceiveAudioUseCaseTest {
     }
 
     @Test void secondAbnormalInsideCooldownCreatesNothing() {
-        when(audio.analyze(any())).thenReturn(new AudioAnalysis("abnormal", 0.9));
+        when(audio.analyze(any())).thenReturn(new AudioAnalysis("HANDLE_EVENT", 0.964));
         when(storage.saveAudio(anyString(), any())).thenReturn(new MediaStoragePort.StoredMedia("a.wav", "p"));
         assertNotNull(useCase.receive(file).eventId());
         assertNull(useCase.receive(file).eventId());

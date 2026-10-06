@@ -54,7 +54,7 @@ public class FastApiMediaAnalysisAdapter implements MediaAnalysisPort {
         return new AnalysisResult(
                 new AnalysisResult.VisionResult(value.getModule(), value.getVideo(), value.getEvents(),
                         value.getRiskScore(), value.getRiskLevel(), accessibleUrl(value.getAnnotatedVideo())),
-                new AnalysisResult.AudioResult(audio.getStatus(), audio.getProbability()));
+                new AnalysisResult.AudioResult(audio.getStatus(), audio.getPredictedProbability()));
     }
 
     private MultiValueMap<String, HttpEntity<?>> multipart(MediaFile file) {
