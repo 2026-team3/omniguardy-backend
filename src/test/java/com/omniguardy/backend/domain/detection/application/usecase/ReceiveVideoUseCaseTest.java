@@ -74,7 +74,7 @@ class ReceiveVideoUseCaseTest {
         assertEquals("trg-keypad", event.getTriggerId());
         assertEquals(EventTriggerType.KEYPAD, event.getTriggerType());
         assertEquals(time, event.getTriggeredAt());
-        assertNull(event.getAudioStatus());
+        assertNull(event.getAudioEventType());
         assertNull(event.getAudioProbability());
         assertNull(event.getAudioPath());
         assertEquals("video-path", event.getVideoPath());

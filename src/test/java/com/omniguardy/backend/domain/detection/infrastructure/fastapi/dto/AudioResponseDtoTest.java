@@ -1,11 +1,13 @@
 package com.omniguardy.backend.domain.detection.infrastructure.fastapi.dto;
 
 import com.omniguardy.backend.domain.ai.infrastructure.fastapi.dto.FastApiAudioResponse;
+import com.omniguardy.backend.domain.detection.application.model.AudioEventType;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class AudioResponseDtoTest {
     private final JsonMapper mapper = JsonMapper.builder().build();
@@ -64,5 +66,18 @@ class AudioResponseDtoTest {
         assertEquals(1.2, response.getWindowStartSeconds());
         assertFalse(response.isCooldownSuppressed());
         assertEquals(0.964, response.getPredictedProbability());
+    }
+
+    @Test
+    void mapsEveryPredictedClassToAudioEventType() {
+        assertEquals(AudioEventType.BACKGROUND, AudioEventType.fromPredictedClass("background"));
+        assertEquals(AudioEventType.KNOCK, AudioEventType.fromPredictedClass("knock"));
+        assertEquals(AudioEventType.HANDLE, AudioEventType.fromPredictedClass("handle"));
+    }
+
+    @Test
+    void rejectsUnknownPredictedClass() {
+        assertThrows(IllegalArgumentException.class,
+                () -> AudioEventType.fromPredictedClass("unknown"));
     }
 }

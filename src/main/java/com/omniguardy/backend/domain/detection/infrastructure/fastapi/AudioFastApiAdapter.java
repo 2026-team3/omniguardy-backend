@@ -1,6 +1,7 @@
 package com.omniguardy.backend.domain.detection.infrastructure.fastapi;
 
 import com.omniguardy.backend.domain.detection.application.model.AudioAnalysis;
+import com.omniguardy.backend.domain.detection.application.model.AudioEventType;
 import com.omniguardy.backend.domain.detection.application.model.MediaFile;
 import com.omniguardy.backend.domain.detection.application.port.out.AudioAnalysisPort;
 import com.omniguardy.backend.domain.detection.infrastructure.fastapi.dto.AudioPredictResponseDto;
@@ -27,7 +28,12 @@ public class AudioFastApiAdapter implements AudioAnalysisPort {
                 .contentType(MediaType.MULTIPART_FORM_DATA).body(body.build()).retrieve()
                 .body(AudioPredictResponseDto.class);
         if (response == null) throw new BusinessException(DetectionErrorCode.AUDIO_ANALYSIS_FAILED);
-        return new AudioAnalysis(response.getStatus(), response.getPredictedProbability());
+        try {
+            AudioEventType eventType = AudioEventType.fromPredictedClass(response.getPredictedClass());
+            return new AudioAnalysis(eventType, response.getPredictedProbability());
+        } catch (IllegalArgumentException exception) {
+            throw new BusinessException(DetectionErrorCode.AUDIO_ANALYSIS_FAILED, exception);
+        }
     }
 
     private ByteArrayResource resource(MediaFile file) {

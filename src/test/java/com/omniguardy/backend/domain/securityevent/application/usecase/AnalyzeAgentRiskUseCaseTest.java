@@ -1,5 +1,6 @@
 package com.omniguardy.backend.domain.securityevent.application.usecase;
 
+import com.omniguardy.backend.domain.detection.application.model.AudioEventType;
 import com.omniguardy.backend.domain.securityevent.domain.model.SecurityEvent;
 import com.omniguardy.backend.domain.securityevent.domain.repository.SecurityEventRepository;
 import com.omniguardy.backend.domain.securityevent.application.port.out.RiskAssessmentPort;
@@ -36,7 +37,7 @@ class AnalyzeAgentRiskUseCaseTest {
         verify(port).assess(captor.capture());
         assertEquals(EventTriggerType.AUDIO, captor.getValue().triggerType());
         assertTrue(captor.getValue().vision().visionEvents().isEmpty());
-        assertEquals("abnormal", captor.getValue().audio().status());
+        assertEquals(AudioEventType.KNOCK, captor.getValue().audio().eventType());
         assertEquals(0.999342, captor.getValue().audio().probability());
         assertEquals("A18", captor.getValue().vision().prediction());
         assertEquals(0.464551, captor.getValue().vision().confidence());
@@ -51,14 +52,15 @@ class AnalyzeAgentRiskUseCaseTest {
         when(repository.findByEventId("event-1")).thenReturn(Optional.of(event));
         when(port.assess(any())).thenThrow(new IllegalStateException("OpenAI failure"));
         assertThrows(IllegalStateException.class, () -> useCase.analyze("event-1"));
-        assertEquals("abnormal", event.getAudioStatus());
+        assertEquals(AudioEventType.KNOCK, event.getAudioEventType());
         assertEquals("A18", event.getVisionPrediction());
         assertEquals("FAILED", event.getStatus());
         verify(repository).save(event);
     }
 
     private SecurityEvent visionAnalyzedEvent() {
-        SecurityEvent event = SecurityEvent.builder().eventId("event-1").triggerType(EventTriggerType.AUDIO).audioStatus("abnormal")
+        SecurityEvent event = SecurityEvent.builder().eventId("event-1").triggerType(EventTriggerType.AUDIO)
+                .audioEventType(AudioEventType.KNOCK)
                 .audioProbability(0.999342).status("CAMERA_REQUESTED").build();
         event.updateVisionResult("A18", 0.464551, "{\"N1\":0.035310,\"A17\":0.222806}",
                 "[]", 0, 10.0, java.time.OffsetDateTime.parse("2026-09-11T00:00:00Z"));
@@ -111,7 +113,7 @@ class AnalyzeAgentRiskUseCaseTest {
         verify(service).assess(captor.capture());
         var json = mapper.readTree(captor.getValue());
         assertEquals("KEYPAD", json.get("triggerType").asString());
-        assertTrue(json.get("audio").get("status").isNull());
+        assertTrue(json.get("audio").get("eventType").isNull());
         assertEquals(0.0, json.get("audio").get("probability").asDouble());
         var actualEvents = json.get("vision").get("visionEvents");
         assertTrue(actualEvents.isArray());

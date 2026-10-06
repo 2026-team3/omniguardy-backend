@@ -23,6 +23,6 @@ public class DetectionPresentationMapper {
 
     public AudioUploadResponseDto toResponse(AudioReceipt receipt) {
         return new AudioUploadResponseDto(receipt.eventId(), receipt.filename(), receipt.size(),
-                receipt.status(), receipt.probability());
+                receipt.eventType(), receipt.probability());
     }
 }
