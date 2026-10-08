@@ -1,5 +1,6 @@
 package com.omniguardy.backend.domain.securityevent.domain.model;
 
+import com.omniguardy.backend.domain.detection.application.model.AudioEventType;
 import com.omniguardy.backend.domain.securityevent.domain.error.SecurityEventErrorCode;
 import com.omniguardy.backend.global.error.exception.BusinessException;
 import com.omniguardy.backend.domain.user.domain.model.User;
@@ -44,8 +45,9 @@ public class SecurityEvent extends BaseTimeEntity {
     // Audio AI 寃곌낵
     // =========================
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "audio_status", length = 20)
-    private String audioStatus;
+    private AudioEventType audioEventType;
 
     @Column(name = "audio_probability")
     private Double audioProbability;

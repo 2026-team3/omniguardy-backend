@@ -1,5 +1,6 @@
 package com.omniguardy.backend.domain.ai.presentation.dto.response;
 
+import com.omniguardy.backend.domain.detection.application.model.AudioEventType;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -7,6 +8,6 @@ import lombok.Getter;
 @Builder
 public class AudioAnalyzeResponse {
 
-    private String status;
+    private AudioEventType eventType;
     private double probability;
 }

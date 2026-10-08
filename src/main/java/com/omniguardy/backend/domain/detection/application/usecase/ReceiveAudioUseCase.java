@@ -1,6 +1,7 @@
 package com.omniguardy.backend.domain.detection.application.usecase;
 
 import com.omniguardy.backend.domain.detection.application.model.AudioAnalysis;
+import com.omniguardy.backend.domain.detection.application.model.AudioEventType;
 import com.omniguardy.backend.domain.detection.application.model.AudioReceipt;
 import com.omniguardy.backend.domain.detection.application.model.MediaFile;
 import com.omniguardy.backend.domain.detection.application.port.out.AudioAnalysisPort;
@@ -35,19 +36,19 @@ public class ReceiveAudioUseCase implements ReceiveAudioInputPort {
         String original = file.originalFilename() == null || file.originalFilename().isBlank()
                 ? "audio.wav" : file.originalFilename();
         AudioAnalysis analysis = audioAnalysisPort.analyze(file);
-        if (!analysis.isAbnormal() || isCoolingDown()) {
-            return new AudioReceipt(null, original, file.size(), analysis.status(), analysis.probability());
+        if (analysis.eventType() == AudioEventType.BACKGROUND || isCoolingDown()) {
+            return new AudioReceipt(null, original, file.size(), analysis.eventType(), analysis.probability());
         }
 
         String eventId = UUID.randomUUID().toString();
         MediaStoragePort.StoredMedia stored = mediaStoragePort.saveAudio(eventId, file);
-        SecurityEvent event = SecurityEvent.builder().eventId(eventId).audioStatus(analysis.status())
+        SecurityEvent event = SecurityEvent.builder().eventId(eventId).audioEventType(analysis.eventType())
                 .audioProbability(analysis.probability()).audioPath(stored.path()).status("AUDIO_DETECTED").build();
         event.connectAudioTrigger(eventId, OffsetDateTime.now());
         securityEventRepository.save(event);
         cameraCommandPort.startCamera(eventId);
         event.markCameraRequested();
-        return new AudioReceipt(eventId, stored.filename(), file.size(), analysis.status(), analysis.probability());
+        return new AudioReceipt(eventId, stored.filename(), file.size(), analysis.eventType(), analysis.probability());
     }
 
     private synchronized boolean isCoolingDown() {

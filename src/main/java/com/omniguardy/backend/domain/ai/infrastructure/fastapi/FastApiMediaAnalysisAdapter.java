@@ -6,6 +6,7 @@ import com.omniguardy.backend.domain.ai.domain.error.AiErrorCode;
 import com.omniguardy.backend.domain.ai.infrastructure.fastapi.dto.FastApiAudioResponse;
 import com.omniguardy.backend.domain.ai.infrastructure.fastapi.dto.FastApiVisionResponse;
 import com.omniguardy.backend.domain.detection.application.model.MediaFile;
+import com.omniguardy.backend.domain.detection.application.model.AudioEventType;
 import com.omniguardy.backend.global.error.exception.BusinessException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -51,10 +52,15 @@ public class FastApiMediaAnalysisAdapter implements MediaAnalysisPort {
         }
         if (audio == null) throw new BusinessException(AiErrorCode.AUDIO_API_FAILED);
         FastApiVisionResponse.Result value = vision.getResult();
-        return new AnalysisResult(
-                new AnalysisResult.VisionResult(value.getModule(), value.getVideo(), value.getEvents(),
-                        value.getRiskScore(), value.getRiskLevel(), accessibleUrl(value.getAnnotatedVideo())),
-                new AnalysisResult.AudioResult(audio.getStatus(), audio.getProbability()));
+        try {
+            AudioEventType eventType = AudioEventType.fromPredictedClass(audio.getPredictedClass());
+            return new AnalysisResult(
+                    new AnalysisResult.VisionResult(value.getModule(), value.getVideo(), value.getEvents(),
+                            value.getRiskScore(), value.getRiskLevel(), accessibleUrl(value.getAnnotatedVideo())),
+                    new AnalysisResult.AudioResult(eventType, audio.getPredictedProbability()));
+        } catch (IllegalArgumentException exception) {
+            throw new BusinessException(AiErrorCode.AUDIO_API_FAILED, exception);
+        }
     }
 
     private MultiValueMap<String, HttpEntity<?>> multipart(MediaFile file) {

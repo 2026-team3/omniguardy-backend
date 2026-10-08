@@ -43,7 +43,7 @@ public class AnalyzeAgentRiskUseCase {
 
     private AgentContext toContext(SecurityEvent event) {
         return new AgentContext(event.getEventId(), event.getTriggerType(),
-                new AgentContext.Audio(event.getAudioStatus(), value(event.getAudioProbability())),
+                new AgentContext.Audio(event.getAudioEventType(), value(event.getAudioProbability())),
                 new AgentContext.Vision(event.getVisionPrediction(), value(event.getVisionConfidence()),
                         probabilities(event.getClassProbabilities()),
                         event.getPersonCount() == null ? 0 : event.getPersonCount(), visionEvents(event.getVisionEvents())));

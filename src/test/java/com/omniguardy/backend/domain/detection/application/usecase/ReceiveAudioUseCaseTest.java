@@ -1,6 +1,7 @@
 package com.omniguardy.backend.domain.detection.application.usecase;
 
 import com.omniguardy.backend.domain.detection.application.model.AudioAnalysis;
+import com.omniguardy.backend.domain.detection.application.model.AudioEventType;
 import com.omniguardy.backend.domain.detection.application.model.MediaFile;
 import com.omniguardy.backend.domain.detection.application.port.out.AudioAnalysisPort;
 import com.omniguardy.backend.domain.detection.application.port.out.CameraCommandPort;
@@ -21,15 +22,16 @@ class ReceiveAudioUseCaseTest {
     private final ReceiveAudioUseCase useCase = new ReceiveAudioUseCase(audio, storage, camera, repository);
     private final MediaFile file = new MediaFile("chunk.wav", "audio/wav", new byte[]{1, 2, 3});
 
-    @Test void normalDoesNotCreateEventOrStartCamera() {
-        when(audio.analyze(any())).thenReturn(new AudioAnalysis("normal", 0.1));
+    @Test void backgroundDoesNotCreateEventOrStartCamera() {
+        when(audio.analyze(any())).thenReturn(new AudioAnalysis(AudioEventType.BACKGROUND, 0.982));
         var receipt = useCase.receive(file);
         assertNull(receipt.eventId());
+        assertEquals(AudioEventType.BACKGROUND, receipt.eventType());
         verifyNoInteractions(storage, camera, repository);
     }
 
-    @Test void abnormalCreatesUuidEventAndStartsCamera() {
-        when(audio.analyze(any())).thenReturn(new AudioAnalysis("abnormal", 0.999342));
+    @Test void knockCreatesUuidEventAndStartsCamera() {
+        when(audio.analyze(any())).thenReturn(new AudioAnalysis(AudioEventType.KNOCK, 0.995));
         when(storage.saveAudio(anyString(), any())).thenAnswer(invocation ->
                 new MediaStoragePort.StoredMedia(invocation.getArgument(0) + "_chunk.wav", "./uploads/audio/file"));
         var receipt = useCase.receive(file);
@@ -37,13 +39,14 @@ class ReceiveAudioUseCaseTest {
         verify(repository).save(argThat(event -> receipt.eventId().equals(event.getEventId())
                 && receipt.eventId().equals(event.getTriggerId())
                 && event.getTriggerType() == com.omniguardy.backend.domain.securityevent.domain.model.EventTriggerType.AUDIO
+                && AudioEventType.KNOCK == event.getAudioEventType()
                 && event.getTriggeredAt() != null
                 && "CAMERA_REQUESTED".equals(event.getStatus())));
         verify(camera).startCamera(receipt.eventId());
     }
 
-    @Test void secondAbnormalInsideCooldownCreatesNothing() {
-        when(audio.analyze(any())).thenReturn(new AudioAnalysis("abnormal", 0.9));
+    @Test void secondHandleInsideCooldownCreatesNothing() {
+        when(audio.analyze(any())).thenReturn(new AudioAnalysis(AudioEventType.HANDLE, 0.964));
         when(storage.saveAudio(anyString(), any())).thenReturn(new MediaStoragePort.StoredMedia("a.wav", "p"));
         assertNotNull(useCase.receive(file).eventId());
         assertNull(useCase.receive(file).eventId());

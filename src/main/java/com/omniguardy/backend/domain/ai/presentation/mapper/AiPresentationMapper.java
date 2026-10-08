@@ -23,7 +23,7 @@ public class AiPresentationMapper {
                 .vision(VisionAnalyzeResponse.builder().module(vision.module()).video(vision.video())
                         .events(vision.events()).riskScore(vision.riskScore()).riskLevel(vision.riskLevel())
                         .annotatedVideo(vision.annotatedVideo()).build())
-                .audio(AudioAnalyzeResponse.builder().status(audio.status()).probability(audio.probability()).build())
+                .audio(AudioAnalyzeResponse.builder().eventType(audio.eventType()).probability(audio.probability()).build())
                 .build();
     }
 }
